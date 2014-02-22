@@ -1,0 +1,62 @@
+local lom = require 'lxp.lom'
+local xpath = require 'xpath'
+
+local read_current = function (apikey,feed, datastream) 
+	local response = http.request {
+	method='get',
+	url = 'http://api.xively.com/v2/feeds/'..feed..'/datastreams/'..datastream,
+	headers =  { ["X-ApiKey"] = tostring(apikey) } }
+	return json.parse(response.content).current_value
+end -- read_current
+local stream = request.query["stream"]
+local alarm = request.query["alarm"]
+
+if(stream==nil)
+	then stream="Level"
+end
+local value = read_current("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198", stream)
+if(alarm==nil) then
+return value
+end
+
+-- Alarm Images
+alert = "http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/lightalert50.gif"
+redlight = "http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/lightred50.jpg"
+amberlight = "http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/lightamber50.jpg"
+greenlight = "http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/lightgreen50.jpg"
+
+-- alarmimg = [[<img class="alignnone  wp-image-2058" alt="other1536" src="http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/other1536.gif" width="50" /> ]]
+-- redimg = [[<img class="alignnone  wp-image-2076" alt="red-light" src="http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/red-light.jpg" width="50" /> ]]
+-- yellowimg = [[<img class="alignnone  wp-image-2075" alt="cutcaster-photo-100390236-Illuminated-amber-traffic-light" src="http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/cutcaster-photo-100390236-Illuminated-amber-traffic-light.jpg" width="50" /> ]]
+-- greenimg = [[<img class="alignnone  wp-image-2074" alt="green-light-550x456" src="http://pumpers-friend.com/oil-gas/wp-content/uploads/2013/08/green-light-550x456.jpg" width="50" />]]
+
+--Alarm Condition
+local alarmHTML = greenlight
+-- Alarm Settings
+if (stream == "Level")then
+--Level High
+--Level Low
+--	alarmHTML = alert
+	if(tonumber(value)>0 and tonumber(value)<100) then
+		alarmHTML = alert
+	end
+elseif (stream == "Switch")then
+--Switch - Low Switch
+-- 1 = low alarm; 0 = ok
+	if(tonumber(value)>0) then
+		alarmHTML = redlight
+	end
+elseif (stream == "Switch1")then
+--Switch1 - High Switch
+-- 1 = high alarm; 0 =ok
+	if(tonumber(value)>0) then
+		alarmHTML = redlight
+	end
+	elseif (stream == "Temperature")then
+--Temperature
+	alarmHTML = greenlight
+	elseif (stream == "ImpVolts")then
+--ImpVolts
+	alarmHTML = greenlight
+end
+return alarmHTML
