@@ -1,0 +1,101 @@
+local lom = require 'lxp.lom'
+local xpath = require 'xpath'
+
+--module('xively')
+--return message
+
+--required for parsing XML response from Cosm
+--local lom = require 'lxp.lom'
+--local xpath = require 'webscriptio/lib/xpath.lua'
+
+local read_current = function (apikey,feed, datastream) 
+	local response = http.request {
+	method='get',
+	url = 'http://api.xively.com/v2/feeds/'..feed..'/datastreams/'..datastream,
+	headers =  { ["X-ApiKey"] = tostring(apikey) } }
+	return json.parse(response.content).current_value
+end -- read_current
+
+local read_24h = function (apikey, feed, datastream) 
+	local response = http.request {
+	method='get',
+	url = 'http://api.xively.com/v2/feeds/'..feed..'/datastreams/'..datastream..'/?duration=24hours&interval=60',
+	headers =  { ["X-ApiKey"] = tostring(apikey) } }
+
+	local values = json.parse(response.content).datapoints
+	local sum = 0
+	local debug =""
+	local max = -math.huge
+        local min = math.huge
+	if values ~= null then
+	  for i=1,# values do
+             sum=sum+values[i].value
+	     max = math.max( max, values[i].value)
+             min = math.min( min, values[i].value)
+  	  end
+	  return {sum/#values, max, min}	
+        else 
+          return "Feed must be frozen!"
+	end	
+end -- read_24h
+
+-- returns something like: {"datastreams": ["cpu_0,2012-11-08T17:30:28.877620Z,24.50", "cpu_1,2012-11-08T17:30:28.877620Z,26.57"], "size": 2} 
+local list_datastreams = function(apikey, feed)
+	local response = http.request {
+	method='get',
+	url = 'http://api.xively.com/v2/feeds/'..feed..'.csv',
+	headers = { ["X-ApiKey"] = tostring(apikey) } }
+	local datastreams = split(tostring(response.content), '\n')
+	
+	return {size=#datastreams, datastreams=datastreams}
+end -- list_datastreams
+
+split = function(s, pattern, maxsplit)
+  local pattern = pattern or ' '
+  local maxsplit = maxsplit or -1
+  local s = s
+  local t = {}
+  local patsz = #pattern
+  while maxsplit ~= 0 do
+    local curpos = 1
+    local found = string.find(s, pattern)
+    if found ~= nil then
+      table.insert(t, string.sub(s, curpos, found - 1))
+      curpos = found + patsz
+      s = string.sub(s, curpos)
+    else
+      table.insert(t, string.sub(s, curpos))
+      break
+    end
+    maxsplit = maxsplit - 1
+    if maxsplit == 0 then
+      table.insert(t, string.sub(s, curpos - patsz - 1))
+    end
+  end
+  return t
+end -- split
+
+local isAlive = function(apikey, feed)
+	local response = http.request {
+	method='get',
+	url = 'http://api.xively.com/v2/feeds/'..feed..'.xml',
+	headers = { ["X-ApiKey"] = tostring(apikey) } }
+	local condition = xpath.selectNodes(lom.parse(response.content), '//status')[1]	
+	return condition[1]
+end -- isAlive
+
+--local status = isAlive("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198")
+--local message
+--local stats = read_24h("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198", "Level")
+--if tostring(status) == "live" then
+--message = "Feed status: live datastream stats:{avg:"..stats[1]..", max:"..stats[2]..", min:"..stats[3].."}"
+--end
+--message = message.." current: "..read_current("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198", "Level")
+
+--local ds = list_datastreams("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198")
+
+--message = message.." data streams: "..ds.datastreams[1]
+--return message 
+
+--return "test message", { read_current = read_current, read_24h = read_24h, list_datastreams = list_datastreams, isAlive = isAlive }
+return request.path
