@@ -1,0 +1,19 @@
+local lom = require 'lxp.lom'
+local xpath = require 'xpath'
+
+local read_current = function (apikey,feed, datastream) 
+	local response = http.request {
+	method='get',
+	url = 'http://api.xively.com/v2/feeds/'..feed..'/datastreams/'..datastream,
+	headers =  { ["X-ApiKey"] = tostring(apikey) } }
+	return json.parse(response.content).at
+end -- read_current
+local stream = request.query["stream"]
+if(stream==nil)
+	then stream="Level"
+end
+local s = read_current("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198", stream)
+local d = string.gsub(s, "20(%d+)-(%d+)-(%d+)(.*)", "%3-%2-%1")
+local t = string.gsub(s, ".*T(%d+):(%d+):(%d+)(.*)", "%1:%2:%3")
+--return d.." and "..t.." and "..s --return "Stream: "..stream.." current value: "..read_current("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198", stream)
+return t
