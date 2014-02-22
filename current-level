@@ -1,0 +1,16 @@
+--local xively = require ('https://www.webscript.io/script/som/xively.lua')
+xively = require '/xively'
+local status = xively.isAlive("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198")
+local message
+local stats = xively.read_24h("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198", "Level")
+if tostring(status) == "live" then
+message = "Feed status: live datastream stats:{avg:"..stats[1]..", max:"..stats[2]..", min:"..stats[3].."}"
+end
+message = message.." current: "..xively.read_current("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198", "Level")
+
+local ds = xively.list_datastreams("f4dBTnKuVgJG8fkOXyMxI6PArVygv3CqDBju2thJ9x1uFXcM","1929153198")
+
+message = message.." data streams: "..ds.datastreams[1]
+return message 
+
+--return "test message", { read_current = read_current, read_24h = read_24h, list_datastreams = list_datastreams, isAlive = isAlive }
